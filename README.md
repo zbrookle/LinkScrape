@@ -1,9 +1,12 @@
-# Packages Required
+# Intro
+
+Sometimes when applying for jobs it can be really hard to find the recruiting manager to address your cover letter to. Using conventional search engine techniques it can be nearly impossible! To solve this issue for myself and others during job searches, I created this webscrubbing code to help people find the employees that they need to connect with by webscrubbing the company's listed employees on LinkedIn.
+
+# Non Native Packages Required
 
 * selenium
-* time
-* re
-* inspect
+* bs4
+* pandas
 
 # Set up
 

@@ -1,13 +1,15 @@
 from selenium import webdriver
-# from selenium.webdriver.common.keys import keys
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 # from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
 import time
 import re
 import inspect
 import os
+import pandas
 
 LINKEDIN_URL = "https://www.linkedin.com/search/results/people/"
 COMPANY = "Disney Streaming Services"
@@ -33,32 +35,48 @@ try:
     password_text_box = driver.find_element_by_id("password")
     password_text_box.send_keys(password + "\n")
 
-    time.sleep(2)
+    # Enter the company name into the filter
+    time.sleep(3)
     current_companies_filter = driver.find_element_by_xpath("//*[contains(@class,'currentCompany')]")
     current_companies_filter.click()
     current_companies_filter_text = driver.find_element_by_xpath("//*[@placeholder='Add a current company']")
     current_companies_filter_text.send_keys(COMPANY)
+    current_companies_filter_text.click()
+    time.sleep(1)
     actions = ActionChains(driver)
-    actions.send_keys(COMPANY)
+    actions.send_keys(Keys.DOWN)
+    actions.send_keys(Keys.RETURN)
     actions.perform()
-    # driver.quit()
+
+    # Apply the filter
+    apply_filter_buttons = driver.find_elements_by_xpath("//*[contains(@data-control-name, 'filter_pill_apply')]")
+    apply_filter_buttons[2].click()
+
+    # Get the resulting employees
+    employeeList = []
+    time.sleep(1)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    results = driver.find_elements_by_xpath("//*[contains(@class, 'search-result__wrapper')]")
+    results = results[:1]
+    for result in results:
+        html = result.get_attribute("outerHTML")
+        soup = BeautifulSoup(html, 'html.parser')
+        name = soup.find("span", class_ = "name actor-name").get_text()
+        info = list(map(lambda x : x.get_text(), soup.find_all("span")))
+
+        # Add employee info to a list
+        employeeList.append({"name" : name, "role" : info[7], "location": info[8]})
+
+    employeeData = pandas.DataFrame(employeeList)
+    print(employeeData)
+    driver.quit()
 except Exception as e:
     print(e)
     driver.quit()
 
-# # print(signInLink)
-# <button aria-label="Current companies filter. Clicking this button displays all Current companies filter options." aria-expanded="false" aria-controls="current-companies-facet-values" id="ember158" class="search-s-facet__button artdeco-button artdeco-button--muted artdeco-button--icon-right artdeco-button--2 artdeco-button--secondary ember-view" type="button">  <li-icon aria-hidden="true" type="caret-filled-down-icon" class="artdeco-button__icon" size="small"><svg viewBox="0 0 24 24" width="24px" height="24px" x="0" y="0" preserveAspectRatio="xMinYMin meet" class="artdeco-icon" focusable="false"><path d="M8.8,10.66L14,5.12A0.07,0.07,0,0,0,13.93,5H2.07A0.07,0.07,0,0,0,2,5.12L7.2,10.66A1.1,1.1,0,0,0,8.8,10.66Z" class="small-icon" style="fill-opacity: 1"></path></svg></li-icon>
-#
+
+
+# <button data-control-name="filter_pill_apply" id="ember166" class="facet-collection-list__apply-button ml2 artdeco-button artdeco-button--2 artdeco-button--primary ember-view" type="button"><!---->
 # <span class="artdeco-button__text">
-#     Current companies
+#     Apply
 # </span></button>
-#
-# <input placeholder="Add a current company" role="combobox" aria-autocomplete="list" aria-activedescendant="" aria-expanded="false" aria-owns="" aria-label="Add a current company" type="text">
-
-
-# <input class="cell-body-textinput" autocomplete="off"
-# data-type-ahead="true"
-# data-email-domains="gmail.com,yahoo.com,hotmail.com,aol.com,comcast.net,sbcglobal.net,msn.com,verizon.net,cox.net"
-# type="email" autocapitalize="off"
-# aria-required="true" id="join-email"
-# name="emailAddress" placeholder="Email" value="">
