@@ -11,7 +11,7 @@ import os
 import pandas
 
 LINKEDIN_URL = "https://www.linkedin.com/search/results/people/"
-COMPANY = input()
+COMPANY = input("Please enter company name: ")
 
 # Get credentials
 creds = open('credentials.txt', 'r').read().split("\n")
