@@ -2,17 +2,16 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-# from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
 import re
-import inspect
 import os
 import pandas
 
 LINKEDIN_URL = "https://www.linkedin.com/search/results/people/"
-COMPANY = "Disney Streaming Services"
+COMPANY = input()
 
 # Get credentials
 creds = open('credentials.txt', 'r').read().split("\n")
@@ -52,31 +51,50 @@ try:
     apply_filter_buttons = driver.find_elements_by_xpath("//*[contains(@data-control-name, 'filter_pill_apply')]")
     apply_filter_buttons[2].click()
 
-    # Get the resulting employees
-    employeeList = []
-    time.sleep(1)
+    # Determine number of pages to iterate through
+    time.sleep(2)
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    results = driver.find_elements_by_xpath("//*[contains(@class, 'search-result__wrapper')]")
-    results = results[:1]
-    for result in results:
-        html = result.get_attribute("outerHTML")
-        soup = BeautifulSoup(html, 'html.parser')
-        name = soup.find("span", class_ = "name actor-name").get_text()
-        info = list(map(lambda x : x.get_text(), soup.find_all("span")))
+    time.sleep(2)
+    page_numbers = driver.find_element_by_xpath("//*[contains(@class,'artdeco-pagination')]")
+    numberHTML = page_numbers.get_attribute("outerHTML")
+    numberSoup = BeautifulSoup(numberHTML, 'html.parser')
+    numbersOnly = list(filter(lambda element : re.match("[1-9][0-9]*",
+                              element.get_text()), numberSoup.find_all("span")))
+    numbers = list(map(lambda number : int(number.get_text()), numbersOnly))
+    total_pages = max(numbers)
 
-        # Add employee info to a list
-        employeeList.append({"name" : name, "role" : info[7], "location": info[8]})
+    # Collect all employee information
+    employeeList = []
+    for i in range(total_pages):
+        time.sleep(1)
+        try:
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1)
+            results = driver.find_elements_by_xpath("//*[contains(@class, 'search-result__wrapper')]")
+            for result in results:
+                html = result.get_attribute("outerHTML")
+                soup = BeautifulSoup(html, 'html.parser')
 
+                # Find all informational fields in the html
+                soups = list(filter(lambda s: re.match(".*ltr.*|.*actor-name.*", str(s)), soup.find_all("span")))
+                info = list(map(lambda s : s.get_text(), soups))
+
+                # Add employee info to a list
+                employeeList.append({"name" : info[len(info) - 3].strip(),
+                                     "role" : info[len(info) - 2].strip(),
+                                     "location": info[len(info) - 1].strip()})
+
+            # Move to next page
+            next_page_link = driver.find_element_by_xpath("//button[@aria-label='Next']")
+            next_page_link.click()
+        except Exception as e:
+            print(e)
+
+    # Export data to excel
     employeeData = pandas.DataFrame(employeeList)
-    print(employeeData)
+    employeeData.to_excel("output.xlsx")
+
     driver.quit()
 except Exception as e:
     print(e)
     driver.quit()
-
-
-
-# <button data-control-name="filter_pill_apply" id="ember166" class="facet-collection-list__apply-button ml2 artdeco-button artdeco-button--2 artdeco-button--primary ember-view" type="button"><!---->
-# <span class="artdeco-button__text">
-#     Apply
-# </span></button>
