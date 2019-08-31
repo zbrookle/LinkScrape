@@ -10,6 +10,7 @@ import re
 import os
 import pandas
 
+TIMER = 1
 LINKEDIN_URL = "https://www.linkedin.com/search/results/people/"
 COMPANY = input("Please enter company name: ")
 
@@ -35,13 +36,13 @@ try:
     password_text_box.send_keys(password + "\n")
 
     # Enter the company name into the filter
-    time.sleep(3)
+    time.sleep(3 * TIMER)
     current_companies_filter = driver.find_element_by_xpath("//*[contains(@class,'currentCompany')]")
     current_companies_filter.click()
     current_companies_filter_text = driver.find_element_by_xpath("//*[@placeholder='Add a current company']")
     current_companies_filter_text.send_keys(COMPANY)
     current_companies_filter_text.click()
-    time.sleep(1)
+    time.sleep(1 * TIMER)
     actions = ActionChains(driver)
     actions.send_keys(Keys.DOWN)
     actions.send_keys(Keys.RETURN)
@@ -52,9 +53,9 @@ try:
     apply_filter_buttons[2].click()
 
     # Determine number of pages to iterate through
-    time.sleep(2)
+    time.sleep(2 * TIMER)
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    time.sleep(2)
+    time.sleep(2 * TIMER)
     page_numbers = driver.find_element_by_xpath("//*[contains(@class,'artdeco-pagination')]")
     numberHTML = page_numbers.get_attribute("outerHTML")
     numberSoup = BeautifulSoup(numberHTML, 'html.parser')
@@ -66,10 +67,10 @@ try:
     # Collect all employee information
     employeeList = []
     for i in range(total_pages):
-        time.sleep(1)
+        time.sleep(1 * TIMER)
         try:
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1)
+            time.sleep(1 * TIMER)
             results = driver.find_elements_by_xpath("//*[contains(@class, 'search-result__wrapper')]")
             for result in results:
                 html = result.get_attribute("outerHTML")
